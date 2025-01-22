@@ -1,13 +1,17 @@
 package com.example.merging.user;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/user")
@@ -20,7 +24,14 @@ public class UserController {
     }
 
     @PostMapping("/join")
-    public ResponseEntity<?> joinUser(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> joinUser(@Valid @RequestBody UserDTO userDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            // 검증 오류 발생 시, 에러 메시지 반환
+            String errorMessage = bindingResult.getAllErrors().stream()
+                    .map(ObjectError::getDefaultMessage)
+                    .collect(Collectors.joining(", "));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", errorMessage));
+        }
         try {
             String accessToken = userService.joinUser(userDTO);
             return ResponseEntity.ok(Map.of("message", "회원가입 성공", "accessToken", accessToken));
