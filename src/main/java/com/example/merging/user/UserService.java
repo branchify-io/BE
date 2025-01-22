@@ -33,6 +33,7 @@ public class UserService {
         user.setEmail(userDTO.getEmail());
         user.setUsername(userDTO.getUsername());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setAffiliation((userDTO.getAffiliation()));
         userRepository.save(user);
 
         return jwtTokenProvider.generateAccessToken(user.getEmail());
