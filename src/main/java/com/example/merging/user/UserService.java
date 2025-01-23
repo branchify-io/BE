@@ -25,9 +25,6 @@ public class UserService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    // Refresh 토큰 저장소 (데이터베이스 또는 메모리로 변경 가능)
-    private final Map<String, String> refreshTokenStore = new ConcurrentHashMap<>();
-
     // 회원가입
     public String joinUser(UserDTO userDTO) {
         if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
