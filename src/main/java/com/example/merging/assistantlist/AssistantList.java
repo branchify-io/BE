@@ -1,12 +1,6 @@
 package com.example.merging.assistantlist;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import com.example.merging.user.User;
@@ -15,21 +9,19 @@ import com.example.merging.user.User;
 @Setter
 public class AssistantList {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private AssistantId id; // 복합 키 (user_email + assistant_name)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "email", referencedColumnName = "email")
+    @MapsId("userEmail") // 복합 키의 user_email 부분을 매핑
+    @JoinColumn(name = "user_email")
     private User user;
 
-    private String assistant_name;
-    private String assistant_id;
-    private String notion_user_id;
-    private String model_name;
-    private String notion_page_list;
-    private String slack_workspace_id;
+    private String notionUserId;
+    private String modelName;
+    private String notionPageList;
+    private String slackWorkspaceId;
     private String status;
-    private String action_tag;
+    private String actionTag;
     
 }
