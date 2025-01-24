@@ -1,8 +1,12 @@
 package com.example.merging.assistantlist;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface AssistantListRepository extends JpaRepository<AssistantList, Long> {
-    
+import java.util.Optional;
+
+@Repository
+public interface AssistantListRepository extends JpaRepository<AssistantList, AssistantId> {
+    Optional<AssistantList> findByNotionUserId(String notionUserId);
 }
 
