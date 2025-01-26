@@ -32,7 +32,8 @@ public class SecurityConfig {
         http
                 .securityContext(securityContext -> securityContext.requireExplicitSave(false)) // 보안 컨텍스트 관리
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // JWT는 Stateless
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/user/join", "/api/user/login", "/api/**").permitAll() // 인증 없이 접근 가능
+                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                        "/api/user/join", "/api/user/login", "/api/**","/api/notion/oauth/callback").permitAll() // 인증 없이 접근 가능
                         .anyRequest().authenticated() // 나머지는 인증 필요
                 )
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화

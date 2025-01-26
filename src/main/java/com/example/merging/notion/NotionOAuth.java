@@ -22,7 +22,7 @@ public class NotionOAuth {
     @JoinColumns({@JoinColumn(name = "user_email", referencedColumnName = "user_email"),
             @JoinColumn(name = "assistant_name", referencedColumnName = "assistant_name")
     })
-    private AssistantList assistantList;
+    private AssistantList assistant;
 
     private String accessToken;
     private String refreshToken;
@@ -30,7 +30,6 @@ public class NotionOAuth {
     private String scope; // 권한 범위
     private String workspaceId;
     private String workspaceName;
-    private Integer expiresIn;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
