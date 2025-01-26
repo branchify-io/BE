@@ -7,10 +7,11 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+// 복합키 클래스
 @Embeddable
 @Getter
 @Setter
-public class AssistantId implements Serializable { // 복합키 클래스
+public class AssistantId implements Serializable {
 
     @Column(name = "user_email", nullable = false)
     private String userEmail; // 사용자 이메일
