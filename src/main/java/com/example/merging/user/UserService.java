@@ -4,6 +4,7 @@ import com.example.merging.jwt.JwtTokenProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -77,6 +78,7 @@ public class UserService {
     }
 
     // 만료된 토큰 삭제 스케줄링
+    @Transactional
     @Scheduled(fixedRate = 86400000) // 하루에 한 번 실행
     public void deleteExpiredTokens() {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // 7일 만료 기준

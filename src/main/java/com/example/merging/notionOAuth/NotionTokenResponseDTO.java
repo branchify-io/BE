@@ -1,4 +1,4 @@
-package com.example.merging.notion;
+package com.example.merging.notionOAuth;
 
 import lombok.Data;
 

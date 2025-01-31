@@ -1,4 +1,4 @@
-package com.example.merging.notion;
+package com.example.merging.notionOAuth;
 
 import com.example.merging.assistantlist.AssistantId;
 import com.example.merging.assistantlist.AssistantList;
