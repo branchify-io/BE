@@ -1,27 +1,41 @@
 package com.example.merging.assistantlist;
 
+import com.example.merging.notionOAuth.NotionOAuth;
+import com.example.merging.slackOAuth.SlackOAuth;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.example.merging.user.User;
+
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class AssistantList {
 
-    @EmbeddedId
-    private AssistantId id; // 복합 키 (user_email + assistant_name)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userEmail") // 복합 키의 user_email 부분을 매핑
-    @JoinColumn(name = "user_email")
+    @JoinColumn(name = "user_email", nullable = false)
     private User user;
 
-    private String notionUserId;
+    @Column(nullable = false)
+    private String assistantName;
+
+    private String actionTag;
     private String modelName;
     private String notionPageList;
-    private String slackWorkspaceId;
     private String status;
-    private String actionTag;
+
+    @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private NotionOAuth notionOAuth;
+
+    @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private SlackOAuth slackOAuth;
     
 }

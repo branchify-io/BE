@@ -1,4 +1,4 @@
-package com.example.merging.notionOAuth;
+package com.example.merging.slackOAuth;
 
 import com.example.merging.assistantlist.AssistantList;
 import jakarta.persistence.*;
@@ -7,15 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "notion_oauth")
-public class NotionOAuth {
+@Table(name = "slack_oauth")
+public class SlackOAuth {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,21 +26,7 @@ public class NotionOAuth {
     })
     private AssistantList assistant;
 
+    private String workspaceId; // Slack 워크스페이스 ID
+    private String workspaceName; // Slack 워크스페이스 이름
     private String accessToken;
-    private String refreshToken;
-    private String tokenType; // 토큰 타입 (Bearer)
-    private String scope; // 권한 범위
-    private String workspaceId;
-    private String workspaceName;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    @PreUpdate
-    public void setUpdatedAt() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }
