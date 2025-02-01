@@ -1,6 +1,5 @@
 package com.example.merging.notionOAuth;
 
-import com.example.merging.assistantlist.AssistantId;
 import com.example.merging.assistantlist.AssistantList;
 import com.example.merging.assistantlist.AssistantListRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,10 +63,8 @@ public class NotionOAuthService {
     // Notion에서 받은 Authorization Code를 Access Token으로 교환
     @Transactional
     public void exchangeAuthorizationCode(String code, String userEmail, String assistantName) {
-        AssistantId id = new AssistantId(userEmail, assistantName);
-
         // Assistant 존재 여부 확인
-        AssistantList assistant = assistantListRepository.findById(id)
+        AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
                 .orElseThrow(() -> new RuntimeException("Assistant not found for user: " + userEmail));
 
         // Base64로 client_id와 client_secret 인코딩
@@ -100,10 +97,15 @@ public class NotionOAuthService {
                     throw new RuntimeException("Response body is null. Failed to get access token.");
                 }
 
-                // OAuth 정보 저장
-                NotionOAuth notionOAuth = new NotionOAuth();
-                notionOAuth.setId(id);
+                // Notion OAuth 정보 확인 (기존 정보가 있으면 업데이트, 없으면 새로 생성)
+                NotionOAuth notionOAuth = notionOAuthRepository
+                        .findByAssistant_AssistantNameAndAssistant_User_Email(assistantName, userEmail)
+                        .orElse(new NotionOAuth());
+
+                // AssistantList 설정 (FK 관계)
                 notionOAuth.setAssistant(assistant);
+
+                // Notion API 응답 값 저장
                 notionOAuth.setAccessToken(tokenResponseDTO.getAccess_token());
                 notionOAuth.setRefreshToken(tokenResponseDTO.getRefresh_token());
                 notionOAuth.setTokenType(tokenResponseDTO.getToken_type());
