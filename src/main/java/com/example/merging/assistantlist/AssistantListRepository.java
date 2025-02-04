@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AssistantListRepository extends JpaRepository<AssistantList, String> {
+public interface AssistantListRepository extends JpaRepository<AssistantList, Long> {
 
     List<AssistantList> findByUser_Email(String userEmail); // 특정 유저의 모든 Assistant 조회
 
