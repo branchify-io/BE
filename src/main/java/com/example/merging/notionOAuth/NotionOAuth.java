@@ -1,6 +1,7 @@
 package com.example.merging.notionOAuth;
 
 import com.example.merging.assistantlist.AssistantList;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,6 +22,7 @@ public class NotionOAuth {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonBackReference
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumns({
             @JoinColumn(name = "assistant_name", referencedColumnName = "assistantName", nullable = false),

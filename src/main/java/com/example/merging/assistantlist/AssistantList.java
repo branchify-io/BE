@@ -2,6 +2,7 @@ package com.example.merging.assistantlist;
 
 import com.example.merging.notionOAuth.NotionOAuth;
 import com.example.merging.slackOAuth.SlackOAuth;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,18 +30,20 @@ public class AssistantList {
     @Column(nullable = false)
     private String assistantName;
 
-    private String actionTag;
-    private String modelName;
-    private String status;
-    
     private String prompt;
+    private String modelName;
     private String openaiApiKey;
-    
+
+    private String actionTag;
+    private String status;
+
     private String notionPageList;  // JSON 형태로 페이지 리스트 저장
 
+    @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
     private NotionOAuth notionOAuth;
 
+    @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
     private SlackOAuth slackOAuth;
 
