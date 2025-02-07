@@ -1,8 +1,12 @@
 package com.example.merging.user;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +22,11 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, RefreshTokenRepository refreshTokenRepository) {
         this.userService = userService;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @PostMapping("/join")
@@ -41,24 +47,55 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO, HttpServletResponse response) {
         try {
-            Map<String, String> tokens = userService.login(userDTO.getEmail(), userDTO.getPassword());
+            Map<String, String> tokens = userService.login(userDTO.getEmail(), userDTO.getPassword(), response);
             return ResponseEntity.ok(tokens);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletRequest request, HttpServletResponse response) {
+        // HttpOnly Cookie에서 refreshToken 가져오기
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        String refreshToken = null;
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals("refreshToken")) {
+                refreshToken = cookie.getValue();
+            }
+        }
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        // DB에서 refreshToken 조회
+        RefreshToken storedToken = refreshTokenRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("리프레시 토큰이 존재하지 않습니다."));
+
+        // 사용자 이메일 가져오기
+        String email = storedToken.getEmail();
+
+        // 로그아웃 처리 (refresh_token 삭제 + 쿠키 삭제)
+        userService.logout(email, response);
+
+        return ResponseEntity.ok(Map.of("message", "로그아웃 성공"));
+    }
+
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> refreshToken(HttpServletRequest request) {
         try {
-            String email = request.get("email");
-            String refreshToken = request.get("refreshToken");
-            String newAccessToken = userService.refreshAccessToken(email, refreshToken);
+            String newAccessToken = userService.refreshAccessToken(request);
             return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-    }
+     }
+
 }
