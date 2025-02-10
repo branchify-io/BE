@@ -4,9 +4,11 @@ import com.example.merging.jwt.JwtAuthenticationFilter;
 import com.example.merging.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,14 +38,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors->cors.configurationSource(corsConfigurationSource()))
-                .securityContext(securityContext -> securityContext.requireExplicitSave(false)) // 보안 컨텍스트 관리
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // JWT는 Stateless
-                .authorizeHttpRequests(auth -> auth.requestMatchers(
-                        "/api/user/join", "/api/user/login", "/api/**","/api/notion/oauth/callback").permitAll() // 인증 없이 접근 가능
-                        .anyRequest().authenticated() // 나머지는 인증 필요
-                )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // JWT는 Stateless
+                .securityContext(securityContext -> securityContext.requireExplicitSave(false)) // 보안 컨텍스트 관리
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/user/join",
+                                "/api/user/login",
+                                "/api/user/logout",
+                                "/api/notion/oauth/callback",
+                                "/api/slack/oauth/callback").permitAll() // 인증 없이 접근 가능
+                        .requestMatchers(HttpMethod.POST, "/api/assistantlist/**").authenticated() // 인증 필요
+                        .anyRequest().permitAll() // 나머지 모든 요청 허용 (임시 테스트)
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class); // JWT 필터 추가
 
         return http.build();

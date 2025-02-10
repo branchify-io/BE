@@ -1,13 +1,11 @@
 package com.example.merging.assistantlist;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,7 +22,6 @@ public class AssistantListController {
     public AssistantListController(AssistantListService assistantListService) {
         this.assistantListService = assistantListService;
     }
-    
 
     @GetMapping
     public List<AssistantList> getAssistantList() {
@@ -32,13 +29,36 @@ public class AssistantListController {
     }
 
     @PostMapping()
-    public ResponseEntity<String> createAssistant(@RequestBody AssistantList assistantList, Authentication authentication) {
+    public ResponseEntity<Map<String, String>> createAssistant(@RequestBody AssistantList assistantList, Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new RuntimeException("User not authenticated");
         }
         String userEmail = authentication.getName();
+
         assistantListService.createAssistant(assistantList, userEmail);
-        return ResponseEntity.ok("ok");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("userEmail", userEmail);
+        response.put("assistantName", assistantList.getAssistantName());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{assistantName}")
+    public ResponseEntity<String> updateAssistantAction(
+            @PathVariable String assistantName,
+            @RequestBody Map<String, String> request,
+            Authentication authentication
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+        String userEmail = authentication.getName();
+        String actionTag = request.get("actionTag");
+
+        assistantListService.updateActionTag(userEmail, assistantName, actionTag);
+
+        return ResponseEntity.ok("Assistant action updated");
     }
 
     @GetMapping("/connect")
