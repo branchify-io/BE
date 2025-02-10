@@ -37,13 +37,22 @@ public class AssistantListService {
         return assistantListRepository.findAll();
     }
     
-    public AssistantList createAssistant(AssistantList assistantList, String userEmail) {
+    public void createAssistant(AssistantList assistantList, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new RuntimeException("User not found"));
             
         assistantList.setUser(user);
-        return assistantListRepository.save(assistantList);
+        assistantListRepository.save(assistantList);
     }
+
+    public void updateActionTag(String userEmail, String assistantName, String actionTag) {
+        AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
+                .orElseThrow(() -> new RuntimeException("Assistant not found or unauthorized"));
+
+        assistant.setActionTag(actionTag);
+        assistantListRepository.save(assistant);
+    }
+
 
     public Object getNotionPages(Long assistantId, String userEmail) {
         // Assistant 정보 조회

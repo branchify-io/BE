@@ -29,8 +29,8 @@ public class AssistantList {
 
     @Column(nullable = false)
     private String assistantName;
-
     private String prompt;
+
     private String modelName;
     private String openaiApiKey;
 
