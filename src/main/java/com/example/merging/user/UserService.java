@@ -58,7 +58,7 @@ public class UserService {
         String accessToken = jwtTokenProvider.generateAccessToken(email);
         String refreshToken = jwtTokenProvider.generateRefreshToken(email);
 
-        // Refresh Token 저장 (이전 토큰 덮어쓰기)
+        // Refresh Token 저장
         refreshTokenRepository.save(new RefreshToken(email, refreshToken));
 
         // HttpOnly Cookie에 Refresh Token 저장
@@ -111,9 +111,9 @@ public class UserService {
 
     // 로그아웃
     @Transactional
-    public void logout(String email, HttpServletResponse response) {
+    public void logout(String refreshToken, HttpServletResponse response) {
         // DB에서 Refresh Token 삭제
-        refreshTokenRepository.deleteByEmail(email);
+        refreshTokenRepository.deleteByRefreshToken(refreshToken);
 
         // HttpOnly Cookie 삭제 (클라이언트에서도 제거됨)
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")

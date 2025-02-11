@@ -83,7 +83,7 @@ public class UserController {
         String email = storedToken.getEmail();
 
         // 로그아웃 처리 (refresh_token 삭제 + 쿠키 삭제)
-        userService.logout(email, response);
+        userService.logout(storedToken.getRefreshToken(), response);
 
         return ResponseEntity.ok(Map.of("message", "로그아웃 성공"));
     }
