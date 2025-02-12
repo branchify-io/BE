@@ -46,7 +46,7 @@ public class AssistantListService {
         assistantListRepository.save(assistantList);
     }
 
-    public void updateActionTag(String userEmail, String assistantName, String actionTag) {
+    public void updateActionTag(String userEmail, String assistantName, List<String> actionTag) {
         AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
                 .orElseThrow(() -> new RuntimeException("Assistant not found or unauthorized"));
 
