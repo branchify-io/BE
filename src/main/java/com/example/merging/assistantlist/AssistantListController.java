@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,14 @@ public class AssistantListController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<AssistantList> getAssistant(@RequestParam String userEmail, @RequestParam String assistantName) {
+
+        return Optional.ofNullable(assistantListService.searchAssistant(userEmail, assistantName))
+                .map(ResponseEntity::ok) // 값이 있으면 200 OK
+                .orElseGet(() -> ResponseEntity.notFound().build()); // 값이 없으면 404 응답
     }
 
 }
