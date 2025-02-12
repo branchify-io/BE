@@ -24,7 +24,7 @@ public class SlackOAuthController {
     @Value("${slack.redirect.uri}")
     private String slackRedirectUri;
 
-    // 플러그인 설치 시 호출되는 메서드
+    // Slack OAuth 요청
     @GetMapping("/connect")
     public ResponseEntity<Void> redirectToSlackAuthPage(@RequestParam String userEmail, @RequestParam String assistantName) {
         String state = userEmail + ":" + assistantName;

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AssistantListService {
@@ -86,6 +87,12 @@ public class AssistantListService {
         );
 
         return response.getBody();
+    }
+
+    // Assistant 검색 (AI 개발 검색용도)
+    public AssistantList searchAssistant(String userEmail, String assistantName) {
+        return assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
+                .orElseThrow(() -> new RuntimeException("Assistant not found"));
     }
 }
 
