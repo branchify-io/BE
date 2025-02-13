@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.example.merging.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.List;
 
@@ -45,10 +47,12 @@ public class AssistantList {
 
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
     private NotionOAuth notionOAuth;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
     private SlackOAuth slackOAuth;
 
 }

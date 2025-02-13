@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -24,6 +26,7 @@ public class NotionOAuth {
 
     @JsonBackReference
     @OneToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE) // AssistantList 삭제 시 자동 삭제
     @JoinColumns({
             @JoinColumn(name = "assistant_name", referencedColumnName = "assistantName", nullable = false),
             @JoinColumn(name = "user_email", referencedColumnName = "user_email", nullable = false)
