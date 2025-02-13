@@ -48,14 +48,14 @@ public class AssistantListController {
     @PatchMapping("/{assistantName}")
     public ResponseEntity<String> updateAssistantAction(
             @PathVariable String assistantName,
-            @RequestBody Map<String, String> request,
+            @RequestBody Map<String, List<String>> request,
             Authentication authentication
     ) {
         if (authentication == null || authentication.getName() == null) {
             throw new RuntimeException("User not authenticated");
         }
         String userEmail = authentication.getName();
-        String actionTag = request.get("actionTag");
+        List<String> actionTag = request.get("actionTag");
 
         assistantListService.updateActionTag(userEmail, assistantName, actionTag);
 

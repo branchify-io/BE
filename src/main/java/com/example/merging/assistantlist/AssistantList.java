@@ -3,6 +3,7 @@ package com.example.merging.assistantlist;
 import java.util.List;
 import java.util.Map;
 
+import com.example.merging.converter.StringListConverter;
 import com.example.merging.notionOAuth.NotionOAuth;
 import com.example.merging.slackOAuth.SlackOAuth;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -13,6 +14,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.example.merging.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.util.List;
 
 @Entity
 @Getter
@@ -34,10 +39,12 @@ public class AssistantList {
     private String assistantName;
     private String prompt;
 
+    @Convert(converter = StringListConverter.class) // JSON 문자열 변환을 위한 컨버터
+    @Column(columnDefinition = "TEXT") // 길이 제한을 피하기 위해 TEXT 사용
+    private List<String> actionTag;
+
     private String modelName;
     private String openaiApiKey;
-
-    private String actionTag;
     private String status;
 
     @Column(name = "notion_page_list", columnDefinition = "TEXT")
@@ -45,10 +52,12 @@ public class AssistantList {
 
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
     private NotionOAuth notionOAuth;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
     private SlackOAuth slackOAuth;
 
     public String getNotionPages() {
