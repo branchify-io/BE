@@ -62,8 +62,8 @@ public class AssistantListController {
         return ResponseEntity.ok("Assistant action updated");
     }
 
-    @GetMapping("/connect")
-    public ResponseEntity<?> getNotionPages(@RequestParam Long assistantId, Authentication authentication) {
+    @GetMapping("/notionPages")
+    public ResponseEntity<?> getNotionPages(@RequestParam String assistantName, Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
@@ -71,12 +71,32 @@ public class AssistantListController {
         String userEmail = authentication.getName();
         System.out.println("userEmail: " + userEmail);
         try {
-            Object pageList = assistantListService.getNotionPages(assistantId, userEmail);
+            Object pageList = assistantListService.getNotionPages(assistantName, userEmail);
             return ResponseEntity.ok(pageList);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping("/notionPages")
+    public ResponseEntity<?> saveNotionPages(
+            @RequestBody String notionPages,
+            @RequestParam String assistantName,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        String userEmail = authentication.getName();
+        System.out.println("notionPages: " + notionPages);
+        try {
+            assistantListService.saveNotionPages(assistantName, userEmail, notionPages);
+            return ResponseEntity.ok("Notion pages saved successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     @GetMapping("/search")
     public ResponseEntity<AssistantList> getAssistant(@RequestParam String userEmail, @RequestParam String assistantName) {

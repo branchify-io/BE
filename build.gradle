@@ -44,6 +44,9 @@ dependencies {
 
 	// slack
 	implementation 'com.slack.api:slack-api-client:1.44.2'
+
+
+	implementation 'org.json:json:20230227'
 }
 
 tasks.named('test') {

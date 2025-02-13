@@ -1,5 +1,8 @@
 package com.example.merging.assistantlist;
 
+import java.util.List;
+import java.util.Map;
+
 import com.example.merging.notionOAuth.NotionOAuth;
 import com.example.merging.slackOAuth.SlackOAuth;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -25,7 +28,7 @@ public class AssistantList {
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_email", nullable = false)
-    private User user;
+    private User user;  
 
     @Column(nullable = false)
     private String assistantName;
@@ -37,7 +40,8 @@ public class AssistantList {
     private String actionTag;
     private String status;
 
-    private String notionPageList;  // JSON 형태로 페이지 리스트 저장
+    @Column(name = "notion_page_list", columnDefinition = "TEXT")
+    private String notionPages;  // JSON 문자열로 저장
 
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,5 +50,13 @@ public class AssistantList {
     @JsonManagedReference
     @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
     private SlackOAuth slackOAuth;
+
+    public String getNotionPages() {
+        return notionPages;
+    }
+
+    public void setNotionPages(String notionPages) {
+        this.notionPages = notionPages;
+    }
 
 }
