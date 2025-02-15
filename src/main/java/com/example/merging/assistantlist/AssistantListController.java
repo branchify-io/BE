@@ -25,8 +25,13 @@ public class AssistantListController {
     }
 
     @GetMapping
-    public List<AssistantList> getAssistantList() {
-        return assistantListService.getAssistantList();
+    public List<AssistantList> getAssistantList(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+        String userEmail = authentication.getName();
+
+        return assistantListService.getAssistantList(userEmail);
     }
 
     @PostMapping()
