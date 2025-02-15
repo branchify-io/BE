@@ -39,8 +39,8 @@ public class AssistantListService {
         this.restTemplate = restTemplate;
     }
 
-    public List<AssistantList> getAssistantList() {
-        return assistantListRepository.findAll();
+    public List<AssistantList> getAssistantList(String userEmail) {
+        return assistantListRepository.findByUser_Email(userEmail);
     }
     
     public void createAssistant(AssistantList assistantList, String userEmail) {

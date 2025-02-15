@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface AssistantListRepository extends JpaRepository<AssistantList, Long> {
 
     Optional<AssistantList> findByAssistantNameAndUser_Email(String assistantName, String userEmail);
-    Optional<AssistantList> findByAssistantName(String assistantName);
+
+    List<AssistantList> findByUser_Email(String userEmail);
 }
