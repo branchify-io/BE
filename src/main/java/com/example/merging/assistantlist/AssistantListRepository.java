@@ -11,5 +11,7 @@ public interface AssistantListRepository extends JpaRepository<AssistantList, Lo
 
     Optional<AssistantList> findByAssistantNameAndUser_Email(String assistantName, String userEmail);
 
+    Optional<AssistantList> findByAssistantName(String assistantName);
+
     List<AssistantList> findByUser_Email(String userEmail);
 }
