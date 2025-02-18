@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class AssistantListService {
@@ -59,6 +61,130 @@ public class AssistantListService {
         assistantListRepository.save(assistant);
     }
 
+    private List<Map<String, Object>> findChangedPages(JSONArray oldJsonArray, JSONArray newJsonArray) {
+        List<Map<String, Object>> changedPages = new ArrayList<>();
+        
+        // 재귀적으로 페이지와 그 하위 페이지들을 비교
+        for (int i = 0; i < oldJsonArray.length(); i++) {
+            JSONObject oldPage = oldJsonArray.getJSONObject(i);
+            String pageId = oldPage.getString("pageId");
+            
+            // 새 배열에서 같은 pageId를 가진 페이지 찾기
+            JSONObject newPage = findPageById(newJsonArray, pageId);
+            Map<String, Object> changedPage = null;
+            
+            if (oldPage.optBoolean("isChecked", false)) {
+                if (newPage == null) {
+                    // 페이지가 삭제된 경우
+                    changedPage = createChangedPageMap(oldPage, true);
+                    changedPages.add(changedPage);
+                } else if (!oldPage.getString("lastEditedTime").equals(newPage.getString("lastEditedTime"))) {
+                    // lastEditedTime이 변경된 경우
+                    changedPage = createChangedPageMap(newPage, false);
+                    changedPage.put("previousEditedTime", oldPage.getString("lastEditedTime"));
+                    changedPages.add(changedPage);
+                }
+            }
+            
+            // 하위 페이지들 처리 - isChecked와 관계없이 항상 처리
+            if (oldPage.has("children") && newPage != null) {
+                JSONArray oldChildren = oldPage.getJSONArray("children");
+                JSONArray newChildren = newPage.has("children") ? 
+                    newPage.getJSONArray("children") : new JSONArray();
+                
+                List<Map<String, Object>> childChanges = findChangedPages(oldChildren, newChildren);
+                if (!childChanges.isEmpty()) {
+                    if (changedPage == null) {
+                        changedPage = createChangedPageMap(oldPage, false);
+                        changedPages.add(changedPage);
+                    }
+                    changedPage.put("children", childChanges);
+                }
+            }
+        }
+        
+        // 새로운 페이지 확인
+        for (int i = 0; i < newJsonArray.length(); i++) {
+            JSONObject newPage = newJsonArray.getJSONObject(i);
+            String pageId = newPage.getString("pageId");
+            
+            if (findPageById(oldJsonArray, pageId) == null) {
+                Map<String, Object> changedPage = createChangedPageMap(newPage, false);
+                changedPage.put("previousEditedTime", "");
+                
+                // 새 페이지의 하위 페이지들도 새로운 페이지로 처리
+                if (newPage.has("children")) {
+                    List<Map<String, Object>> childChanges = processNewPages(newPage.getJSONArray("children"));
+                    if (!childChanges.isEmpty()) {
+                        changedPage.put("children", childChanges);
+                    }
+                }
+                
+                changedPages.add(changedPage);
+            }
+        }
+        
+        return changedPages;
+    }
+
+    private JSONObject findPageById(JSONArray array, String pageId) {
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject page = array.getJSONObject(i);
+            if (page.getString("pageId").equals(pageId)) {
+                return page;
+            }
+        }
+        return null;
+    }
+
+    private Map<String, Object> createChangedPageMap(JSONObject page, boolean isDeleted) {
+        Map<String, Object> changedPage = new HashMap<>();
+        changedPage.put("pageId", page.getString("pageId"));
+        changedPage.put("lastEditedTime", page.getString("lastEditedTime"));
+        changedPage.put("title", page.getString("title"));
+        changedPage.put("url", isDeleted ? "" : page.getString("url"));
+        return changedPage;
+    }
+
+    private List<Map<String, Object>> processNewPages(JSONArray pages) {
+        List<Map<String, Object>> newPages = new ArrayList<>();
+        for (int i = 0; i < pages.length(); i++) {
+            JSONObject page = pages.getJSONObject(i);
+            Map<String, Object> newPage = createChangedPageMap(page, false);
+            newPage.put("previousEditedTime", "");
+            
+            if (page.has("children")) {
+                List<Map<String, Object>> childChanges = processNewPages(page.getJSONArray("children"));
+                if (!childChanges.isEmpty()) {
+                    newPage.put("children", childChanges);
+                }
+            }
+            
+            newPages.add(newPage);
+        }
+        return newPages;
+    }
+
+    public String updateNotionPages(String assistantName, String userEmail) {
+        AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
+            .orElseThrow(() -> new RuntimeException("Assistant not found or unauthorized"));
+
+        String oldNotionPages = assistant.getNotionPages();
+        JSONArray oldJsonArray = null;
+
+        if(oldNotionPages == null) {
+            oldJsonArray = new JSONArray();
+        } else {
+            oldJsonArray = new JSONArray(oldNotionPages);
+        }
+        
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> newNotionPagesList = (List<Map<String, Object>>) getNotionPages(assistantName, userEmail);
+        JSONArray newJsonArray = new JSONArray(newNotionPagesList);
+        
+        List<Map<String, Object>> changedPages = findChangedPages(oldJsonArray, newJsonArray);
+        return new JSONArray(changedPages).toString();
+    }
 
     public Object getNotionPages(String assistantName, String userEmail) {
         // Assistant 정보 조회
@@ -193,26 +319,45 @@ public class AssistantListService {
             pageMap.put(page.getString("pageId"), pageData);
         }
         
+        Set<String> processedPages = new HashSet<>();  // 처리된 페이지 추적
+        
         // 2. 각 페이지를 순회하면서 부모-자식 관계 설정
         for (Map<String, Object> page : pageMap.values()) {
             Map<String, Object> parent = (Map<String, Object>) page.get("parent");
             String parentType = (String) parent.get("type");
+            String pageId = (String) page.get("pageId");
             
-            if (parentType.equals("workspace")) {
-                // 최상위 페이지는 결과 리스트에 직접 추가
-                result.add(page);
-            } else if (parentType.equals("page_id")) {
-                // 부모 페이지의 children에 현재 페이지 추가
-                String parentId = (String) parent.get("page_id");
-                Map<String, Object> parentPage = pageMap.get(parentId);
-                if (parentPage != null) {
-                    List<Map<String, Object>> children = (List<Map<String, Object>>) parentPage.get("children");
-                    children.add(page);
+            if (!processedPages.contains(pageId)) {
+                if (parentType.equals("workspace")) {
+                    // 최상위 페이지는 결과 리스트에 직접 추가
+                    result.add(page);
+                    processedPages.add(pageId);
+                } else if (parentType.equals("page_id") || parentType.equals("database_id") || parentType.equals("block_id")) {
+                    String parentId = (String) parent.get(parentType);
+                    Map<String, Object> parentPage = pageMap.get(parentId);
+                    
+                    if (parentPage == null) {
+                        // 부모 페이지가 없는 경우 최상위 레벨에 추가
+                        result.add(page);
+                    } else {
+                        // 부모 페이지의 children에 현재 페이지 추가
+                        List<Map<String, Object>> children = (List<Map<String, Object>>) parentPage.get("children");
+                        children.add(page);
+                    }
+                    processedPages.add(pageId);
                 }
             }
         }
         
-        // 3. parent 정보 제거
+        // 3. 아직 처리되지 않은 페이지들을 최상위 레벨에 추가
+        for (Map<String, Object> page : pageMap.values()) {
+            String pageId = (String) page.get("pageId");
+            if (!processedPages.contains(pageId)) {
+                result.add(page);
+            }
+        }
+        
+        // 4. parent 정보 제거
         removeParentInfo(result);
         
         return result;

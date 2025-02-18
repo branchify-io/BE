@@ -12,7 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+
+import com.example.merging.assistantlist.AssistantList;
+import com.example.merging.assistantlist.AssistantListService;
 
 @Service
 public class UserService {
@@ -21,13 +25,16 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AssistantListService assistantListService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider, RefreshTokenRepository refreshTokenRepository) {
+                       JwtTokenProvider jwtTokenProvider, RefreshTokenRepository refreshTokenRepository,
+                       AssistantListService assistantListService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.assistantListService = assistantListService;
     }
 
     // 회원가입
@@ -132,6 +139,53 @@ public class UserService {
     public void deleteExpiredTokens() {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // 7일 만료 기준
         refreshTokenRepository.deleteByCreatedAtBefore(cutoffDate);
+    }
+
+    // Notion 페이지 업데이트 스케줄링
+    @Transactional
+    @Scheduled(fixedRate = 3600000) // 1시간(3600000 밀리초)마다 실행
+    public void scheduleNotionPagesUpdate() {
+        List<User> allUsers = userRepository.findAll();
+        
+        for (User user : allUsers) {
+            try {
+                List<AssistantList> userAssistants = assistantListService.getAssistantList(user.getEmail());
+                
+                for (AssistantList assistant : userAssistants) {
+                    try {
+                        String changedPages = assistantListService.updateNotionPages(
+                            assistant.getAssistantName(), 
+                            user.getEmail()
+                        );
+                        
+                        if (!changedPages.equals("[]")) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> currentPages = 
+                                (List<Map<String, Object>>) assistantListService.getNotionPages(
+                                    assistant.getAssistantName(), 
+                                    user.getEmail()
+                                );
+                            assistantListService.saveNotionPages(
+                                assistant.getAssistantName(),
+                                user.getEmail(),
+                                new org.json.JSONArray(currentPages).toString()
+                            );
+                            
+                            System.out.println("Scheduled update completed for user: " + user.getEmail() + 
+                                             ", assistant: " + assistant.getAssistantName() + 
+                                             ", changes detected: " + changedPages);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error updating assistant: " + assistant.getAssistantName() + 
+                                         " for user: " + user.getEmail() + 
+                                         ", Error: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error processing user: " + user.getEmail() + 
+                                 ", Error: " + e.getMessage());
+            }
+        }
     }
 
 }

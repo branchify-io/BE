@@ -102,6 +102,23 @@ public class AssistantListController {
         }
     }
 
+    @PostMapping("/notionUpdate")
+    public ResponseEntity<?> updateNotionPages(
+            @RequestParam String assistantName,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        String userEmail = authentication.getName();
+        try {
+            String a = assistantListService.updateNotionPages(assistantName, userEmail);
+            return ResponseEntity.ok(a);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     @GetMapping("/search")
     public ResponseEntity<AssistantList> getAssistant(@RequestParam String userEmail, @RequestParam String assistantName) {
