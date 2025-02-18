@@ -114,6 +114,10 @@ public class NotionOAuthService {
                 notionOAuth.setWorkspaceName(tokenResponseDTO.getWorkspace_name());
 
                 notionOAuthRepository.save(notionOAuth);
+
+                // assistantList의 isConnect 값을 true로 업데이트
+                assistant.setIsConnect(true);
+                assistantListRepository.save(assistant);
             } else {
                 // HTTP 응답 코드가 2xx가 아닌 경우 처리
                 throw new RuntimeException("Failed to exchange authorization code: " + response.getStatusCode());

@@ -51,7 +51,7 @@ public class AssistantListController {
     }
 
     @PatchMapping("/{assistantName}")
-    public ResponseEntity<String> updateAssistantAction(
+    public ResponseEntity<String> updateAssistant(
             @PathVariable String assistantName,
             @RequestBody Map<String, List<String>> request,
             Authentication authentication

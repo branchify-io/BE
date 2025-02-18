@@ -46,6 +46,7 @@ public class AssistantList {
     private String modelName;
     private String openaiApiKey;
     private String status;
+    private Boolean isConnect;
 
     @Column(name = "notion_page_list", columnDefinition = "TEXT")
     private String notionPages;  // JSON 문자열로 저장

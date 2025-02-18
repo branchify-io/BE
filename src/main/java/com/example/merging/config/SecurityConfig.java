@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/api/user/login",
                                 "/api/user/logout",
                                 "/api/notion/oauth/callback",
-                                "/api/slack/oauth/callback").permitAll() // 인증 없이 접근 가능
+                                "/api/slack/oauth/callback",
+                                "/api/assistantlist/search/**").permitAll() // 인증 없이 접근 가능
                         .requestMatchers("/api/assistantlist/**").authenticated() // 인증 필요
                         .anyRequest().permitAll() // 나머지 모든 요청 허용 (임시 테스트)
                 )
