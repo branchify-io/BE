@@ -1,6 +1,7 @@
 package com.example.merging.notionOAuth;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,10 +42,31 @@ public class NotionOAuthController {
             // Authorization Code 처리
             notionOAuthService.exchangeAuthorizationCode(code, userEmail, assistantName);
 
-            return ResponseEntity.ok("Notion account connected successfully!");
+            // OAuth 인증 성공 시 새 창 닫기 위한 JavaScript 포함된 HTML 반환
+            String successHtml = "<!DOCTYPE html>" +
+                    "<html lang='en'>" +
+                    "<head><meta charset='UTF-8'><title>Notion OAuth</title></head>" +
+                    "<body>" +
+                    "<script>" +
+                    "  window.opener.postMessage('notion_auth_success', '*');" + // 부모 창에 알림
+                    "  window.close();" + // 현재 창 닫기
+                    "</script>" +
+                    "<p>Notion account connected successfully! You can close this window.</p>" +
+                    "</body>" +
+                    "</html>";
+
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(successHtml);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to connect Notion account: " + e.getMessage());
+            // OAuth 인증 실패 시 에러 페이지 반환
+            String errorHtml = "<!DOCTYPE html>" +
+                    "<html lang='en'>" +
+                    "<head><meta charset='UTF-8'><title>Notion OAuth</title></head>" +
+                    "<body>" +
+                    "<p>Failed to connect Notion account: " + e.getMessage() + "</p>" +
+                    "</body>" +
+                    "</html>";
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_HTML).body(errorHtml);
         }
     }
 }

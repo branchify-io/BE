@@ -45,8 +45,16 @@ dependencies {
 	// slack
 	implementation 'com.slack.api:slack-api-client:1.44.2'
 
-
 	implementation 'org.json:json:20230227'
+
+	// AWS SDK v2 - S3 및 Presigner
+	implementation 'software.amazon.awssdk:s3:2.20.40'
+
+	// RestTemplate (AI 서버와 통신)
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// JSON 파싱 (Map → JSON 변환)
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {
