@@ -64,7 +64,31 @@ public class AssistantListController {
 
         assistantListService.updateActionTag(userEmail, assistantName, actionTag);
 
+        assistantListService.sendAssistantToAIServer(userEmail, assistantName);
+
         return ResponseEntity.ok("Assistant action updated");
+    }
+
+    @PatchMapping("/{assistantName}/update-s3-url")
+    public ResponseEntity<String> updateAssistantS3Url(
+            @PathVariable String assistantName,
+            @RequestBody Map<String, String> request,
+            Authentication authentication
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        String userEmail = authentication.getName();
+        String s3FileUrl = request.get("s3FileUrl");
+
+        if (s3FileUrl == null || s3FileUrl.isEmpty()) {
+            return ResponseEntity.badRequest().body("s3FileUrl is required");
+        }
+
+        assistantListService.updateAssistantS3Url(userEmail, assistantName, s3FileUrl);
+
+        return ResponseEntity.ok("Assistant S3 URL updated successfully");
     }
 
     @GetMapping("/notionPages")

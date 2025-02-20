@@ -48,7 +48,7 @@ public class AssistantListService {
     public void createAssistant(AssistantList assistantList, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new RuntimeException("User not found"));
-            
+
         assistantList.setUser(user);
         assistantListRepository.save(assistantList);
     }
@@ -59,6 +59,25 @@ public class AssistantListService {
 
         assistant.setActionTag(actionTag);
         assistantListRepository.save(assistant);
+    }
+
+    public void updateAssistantS3Url(String userEmail, String assistantName, String s3FileUrl) {
+        AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
+                .orElseThrow(() -> new RuntimeException("Assistant not found or unauthorized"));
+
+        assistant.setS3FileUrl(s3FileUrl);
+        assistantListRepository.save(assistant);
+    }
+
+    // 생성된 assistant를 AI 서버로 전송
+    public void sendAssistantToAIServer(String userEmail, String assistantName) {
+        // assistant 정보 조회
+        AssistantList assistant = assistantListRepository.findByAssistantNameAndUser_Email(assistantName, userEmail)
+                .orElseThrow(() -> new RuntimeException("Assistant not found"));
+
+        // AI 서버로 전송
+        String aiServerUrl = "http://localhost:8000/api/process-assistant";
+        restTemplate.postForEntity(aiServerUrl, assistant, String.class);
     }
 
     private List<Map<String, Object>> findChangedPages(JSONArray oldJsonArray, JSONArray newJsonArray) {

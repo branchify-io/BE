@@ -37,6 +37,11 @@ public class AssistantList {
 
     @Column(nullable = false)
     private String assistantName;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String promptDetail;
+
     private String prompt;
 
     @Convert(converter = StringListConverter.class) // JSON 문자열 변환을 위한 컨버터
@@ -47,6 +52,9 @@ public class AssistantList {
     private String openaiApiKey;
     private String status;
     private Boolean isConnect;
+
+    @Column(name = "s3_file_url")
+    private String s3FileUrl;
 
     @Column(name = "notion_page_list", columnDefinition = "TEXT")
     private String notionPages;  // JSON 문자열로 저장

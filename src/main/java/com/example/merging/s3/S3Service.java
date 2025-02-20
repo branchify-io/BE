@@ -1,7 +1,9 @@
 package com.example.merging.s3;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -10,13 +12,18 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class S3Service {
 
     private final S3Presigner presigner;
+    private final RestTemplate restTemplate;
+    private static final String AI_SERVER_URL = "http://localhost:8000/api/process-pdf";
 
-    public S3Service() {
+    public S3Service(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
         this.presigner = S3Presigner.builder()
                 .region(Region.AP_NORTHEAST_2) // AWS 리전
                 .credentialsProvider(DefaultCredentialsProvider.create()) // IAM 역할 자동 인증
@@ -44,7 +51,7 @@ public class S3Service {
         return presignedUrl.toString();
     }
 
-    // S3에서 업로드된 파일의 URL 반환
+    // S3에 업로드될 파일의 URL
     public String getS3FileUrl(String fileName) {
         return "https://" + bucketName + ".s3" + Region.AP_NORTHEAST_2 + ".amazonaws.com/uploads/" + fileName;
     }
