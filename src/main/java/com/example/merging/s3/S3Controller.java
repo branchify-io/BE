@@ -1,5 +1,6 @@
 package com.example.merging.s3;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +19,8 @@ public class S3Controller {
     }
 
     @PostMapping("/generate-presigned-url")
-    public Map<String, String> generatePresignedUrl(@RequestBody Map<String, String> requset) {
-        String fileName = requset.get("fileName");
+    public Map<String, String> generatePresignedUrl(@RequestBody Map<String, String> request) {
+        String fileName = request.get("fileName");
         String presignedUrl = s3Service.generatePresignedUrl(fileName);
         String fileUrl = s3Service.getS3FileUrl(fileName);
 
