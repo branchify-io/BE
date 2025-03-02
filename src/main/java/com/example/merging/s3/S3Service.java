@@ -20,7 +20,6 @@ public class S3Service {
 
     private final S3Presigner presigner;
     private final RestTemplate restTemplate;
-    private static final String AI_SERVER_URL = "http://localhost:8000/api/process-pdf";
 
     public S3Service(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -36,7 +35,7 @@ public class S3Service {
 
     // S3 Presigned URL 생성
     public String generatePresignedUrl(String fileName) {
-        String objectKey = "uploads/" + fileName; // 파일 저장 경로 지정
+        String objectKey = fileName; // 최상위 경로에 지정
 
         // Presigned URL 요청 생성
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -53,6 +52,6 @@ public class S3Service {
 
     // S3에 업로드될 파일의 URL
     public String getS3FileUrl(String fileName) {
-        return "https://" + bucketName + ".s3" + Region.AP_NORTHEAST_2 + ".amazonaws.com/uploads/" + fileName;
+        return "https://" + bucketName + ".s3.ap-northeast-2.amazonaws.com/" + fileName;
     }
 }
