@@ -3,11 +3,7 @@
 const { NotionToMarkdown } = require("notion-to-md");
 const { Client } = require("@notionhq/client");
 
-// 개인 테스트용 Notion API 토큰과 메인 페이지 ID를 상수로 정의합니다.
-const NOTION_TOKEN = "ntn_b29039163674LZ9MN9dlPcq0addDeEgDTD9JTaI6rC2auf"; // 여기에 본인의 Notion API 토큰을 입력하세요.
-const MAIN_PAGE_ID = "9a234cbd-b115-4656-aaa4-dd95927a4804";   // 여기에 변환할 메인 Notion 페이지의 ID를 입력하세요.
-
-const notion = new Client({ auth: NOTION_TOKEN });
+const notion = new Client({ auth: process.argv[2] });
 // Notion client를 명시적으로 전달하도록 수정
 const n2m = new NotionToMarkdown({ notionClient: notion });
 
