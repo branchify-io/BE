@@ -1,0 +1,8 @@
+{
+    "name": "notion-pages",
+    "version": "1.0.0",
+    "dependencies": {
+      "@notionhq/client": "^2.0.0",
+      "notion-to-md": "^3.0.0"
+    }
+  }

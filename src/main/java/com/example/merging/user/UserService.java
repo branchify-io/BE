@@ -143,7 +143,7 @@ public class UserService {
 
     // Notion 페이지 업데이트 스케줄링
     @Transactional
-    @Scheduled(fixedRate = 3600000) // 1시간(3600000 밀리초)마다 실행
+    //@Scheduled(fixedRate = 3600000) // 1시간(3600000 밀리초)마다 실행
     public void scheduleNotionPagesUpdate() {
         List<User> allUsers = userRepository.findAll();
         

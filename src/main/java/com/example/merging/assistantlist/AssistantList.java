@@ -18,6 +18,14 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.List;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @Entity
 @Getter
@@ -71,6 +79,56 @@ public class AssistantList {
 
     public String getNotionPages() {
         return notionPages;
+    }
+
+    public String getNotionPageId() {
+        if (this.notionOAuth == null) {
+            throw new RuntimeException("Notion OAuth 연결이 필요합니다.");
+        }
+
+        try {
+            // Notion API 호출을 위한 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(this.notionOAuth.getAccessToken());
+            headers.set("Notion-Version", "2022-06-28");
+
+            // search API 요청 본문 구성 - workspace root 페이지만 검색
+            String requestBody = "{\"filter\": {\"value\": \"page\", \"property\": \"object\"}}";
+            
+            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
+            
+            // RestTemplate을 사용하여 API 호출
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(
+                "https://api.notion.com/v1/search",
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+            );
+
+            // 응답 파싱
+            JSONObject jsonResponse = new JSONObject(response.getBody());
+            JSONArray results = jsonResponse.getJSONArray("results");
+
+            // workspace root 페이지 찾기
+            for (int i = 0; i < results.length(); i++) {
+                JSONObject page = results.getJSONObject(i);
+                if (page.has("parent") && page.getJSONObject("parent").has("type")) {
+                    String parentType = page.getJSONObject("parent").getString("type");
+                    if ("workspace".equals(parentType)) {
+                        String pageId = page.getString("id");
+                        System.out.println("워크스페이스 루트 페이지 ID: " + pageId);
+                        return pageId;
+                    }
+                }
+            }
+
+            throw new RuntimeException("워크스페이스 루트 페이지를 찾을 수 없습니다.");
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Notion 워크스페이스 루트 페이지 ID를 가져오는데 실패했습니다: " + e.getMessage());
+        }
     }
 
     public void setNotionPages(String notionPages) {

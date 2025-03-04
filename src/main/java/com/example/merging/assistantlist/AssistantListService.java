@@ -22,6 +22,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.ProcessBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AssistantListService {
@@ -33,6 +40,9 @@ public class AssistantListService {
 
     @Value("${notion.api.base-url}")
     private String notionApiBaseUrl;
+
+    @Value("${spring.web.resources.static-locations}")
+    private String resourceLocation;
 
     public AssistantListService(AssistantListRepository assistantListRepository, UserRepository userRepository, NotionOAuthRepository notionOAuthRepository, RestTemplate restTemplate) {
         this.assistantListRepository = assistantListRepository;
@@ -205,7 +215,85 @@ public class AssistantListService {
         return new JSONArray(changedPages).toString();
     }
 
-    public Object getNotionPages(String assistantName, String userEmail) {
+    public String getNotionPages(String assistantName, String userEmail) {
+        try {
+            // Assistant 정보 조회
+            AssistantList assistant = assistantListRepository.findByAssistantName(assistantName)
+                .orElseThrow(() -> new RuntimeException("Assistant not found"));
+
+            // 사용자 검증
+            if (!assistant.getUser().getEmail().equals(userEmail)) {
+                throw new RuntimeException("Unauthorized access");
+            }
+
+            // Notion OAuth 토큰 조회
+            NotionOAuth notionOAuth = notionOAuthRepository
+                .findByAssistant_AssistantNameAndAssistant_User_Email(
+                    assistant.getAssistantName(), userEmail)
+                .orElseThrow(() -> new RuntimeException("Notion connection not found"));
+
+            // 현재 프로젝트의 루트 디렉토리 경로 가져오기
+            String projectRoot = System.getProperty("user.dir");
+            String scriptPath = projectRoot + "/src/main/resources/scripts/notion/getPages.js";
+            String workingDir = projectRoot + "/src/main/resources/scripts/notion";
+
+            System.out.println("Project Root: " + projectRoot);  // 디버깅용
+            System.out.println("Script path: " + scriptPath);    // 디버깅용
+            System.out.println("Working directory: " + workingDir);  // 디버깅용
+
+            ProcessBuilder processBuilder = new ProcessBuilder("node", 
+                scriptPath,
+                notionOAuth.getAccessToken(),
+                assistant.getNotionPageId(),
+                "1");
+            
+            // 작업 디렉토리 설정
+            processBuilder.directory(new File(workingDir));
+            
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            
+            // 표준 출력을 읽기 위한 BufferedReader
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            
+            // 출력을 먼저 읽음
+            while ((line = reader.readLine()) != null) {
+                output.append(line);
+            }
+
+            // 프로세스 종료를 기다림 (타임아웃 설정)
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                throw new RuntimeException("프로세스 실행 시간이 초과되었습니다.");
+            }
+
+            // 프로세스가 정상 종료되었는지 확인
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                // 에러 스트림 확인
+                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                StringBuilder errorOutput = new StringBuilder();
+                String errorLine;
+                while ((errorLine = errorReader.readLine()) != null) {
+                    errorOutput.append(errorLine).append("\n");
+                }
+                throw new RuntimeException("프로세스가 비정상 종료되었습니다. Exit code: " + exitCode + "\nError: " + errorOutput.toString());
+            }
+
+            return output.toString();
+
+        } catch (IOException | InterruptedException e) {
+            // InterruptedException이 발생하면 현재 스레드의 인터럽트 상태를 복원
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new RuntimeException("Notion 페이지 정보를 가져오는데 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    public Object getNotionContent(String assistantName, String userEmail) {
         // Assistant 정보 조회
         AssistantList assistant = assistantListRepository.findByAssistantName(assistantName)
             .orElseThrow(() -> new RuntimeException("Assistant not found"));
@@ -221,87 +309,69 @@ public class AssistantListService {
                 assistant.getAssistantName(), userEmail)
             .orElseThrow(() -> new RuntimeException("Notion connection not found"));
 
-        // Notion API 호출
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(notionOAuth.getAccessToken());
-        headers.set("Notion-Version", "2022-06-28");
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        try {
+            // 현재 프로젝트의 루트 디렉토리 경로 가져오기
+            String projectRoot = System.getProperty("user.dir");
+            String scriptPath = projectRoot + "/src/main/resources/scripts/notion/getPages.js";
+            String workingDir = projectRoot + "/src/main/resources/scripts/notion";
 
-        HttpEntity<?> request = new HttpEntity<>(headers);
+            System.out.println("Project Root: " + projectRoot);  // 디버깅용
+            System.out.println("Script path: " + scriptPath);    // 디버깅용
+            System.out.println("Working directory: " + workingDir);  // 디버깅용
 
-        ResponseEntity<String> response = restTemplate.exchange(
-            notionApiBaseUrl + "/search",
-            HttpMethod.POST,
-            request,
-            String.class
-        );
+            // JSON 문자열 이스케이프 처리
+            String notionPages = assistant.getNotionPages();
+            
+            // 줄바꿈 문자 제거 및 이스케이프 처리
+            String escapedStructure = notionPages
+                .replace("\r\n", " ")
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\"", "\\\"");
+            
+            // 명령행 인자로 전달할 때 따옴표로 감싸기
+            escapedStructure = "\"" + escapedStructure + "\"";
 
-        JSONObject jsonObject = new JSONObject(response.getBody());
-        JSONArray results = jsonObject.getJSONArray("results");
-        JSONArray newResults = new JSONArray();
-        for (int i = 0; i < results.length(); i++) {
-            System.out.println(i);
-            String lastEditedTime = "";
-            String title = "";
-            String url = "";
-            String pageId = "";
-            JSONObject parent = null;
-            JSONObject page = results.getJSONObject(i);
-            if(page.getString("object").equals("page")) {
-                System.out.println("page");
-                lastEditedTime = page.getString("last_edited_time");
-                url = page.getString("url");
-                pageId = page.getString("id");
-                parent = page.getJSONObject("parent");
-                // properties 객체 가져오기
-                JSONObject properties = page.getJSONObject("properties");
-                // properties의 모든 키를 순회하면서 title type 찾기
-                for (String key : properties.keySet()) {
-                    JSONObject property = properties.getJSONObject(key);
-                    if (property.getString("type").equals("title")) {
-                        JSONArray titleArray = property.getJSONArray("title");
-                        if (titleArray.length() > 0) {
-                            title = titleArray.getJSONObject(0).getString("plain_text");
-                        }
-                        break;
-                    }
-                }
-            } else if (page.getString("object").equals("database")) {
-                System.out.println("database");
-                lastEditedTime = page.getString("last_edited_time");
-                url = page.getString("url");
-                pageId = page.getString("id");
-                parent = page.getJSONObject("parent");
-                if(page.has("title")) {
-                    JSONArray titleArray = page.getJSONArray("title");
-                    if(titleArray.length() > 0) {
-                        title = titleArray.getJSONObject(0).getString("plain_text");
-                    }
-                } else {
-                    JSONObject properties = page.getJSONObject("properties");
-                    for(String key : properties.keySet()) {
-                        JSONObject property = properties.getJSONObject(key);
-                        if(property.getString("type").equals("title")) {
-                            JSONArray titleArray = property.getJSONArray("title");
-                            if(titleArray.length() > 0) {
-                                title = titleArray.getJSONObject(0).getString("plain_text");
-                            }
-                        }
-                    }
+            ProcessBuilder processBuilder = new ProcessBuilder("node", 
+                scriptPath,
+                notionOAuth.getAccessToken(),
+                assistant.getNotionPageId(),
+                "2",
+                escapedStructure
+            );
+            
+            // 디버깅을 위한 명령어 출력
+            System.out.println("Executing command: " + String.join(" ", processBuilder.command()));
+            
+            // 작업 디렉토리 설정
+            processBuilder.directory(new File(workingDir));
+            
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            // 프로세스의 출력을 읽습니다
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("Script output: " + line);  // 로그 추가
+                    output.append(line).append("\n");
                 }
             }
-            JSONObject pageInfo = new JSONObject();
-            pageInfo.put("lastEditedTime", lastEditedTime);
-            pageInfo.put("title", title); 
-            pageInfo.put("url", url);
-            pageInfo.put("pageId", pageId);
-            pageInfo.put("parent", parent);
-            newResults.put(i, pageInfo);
-        }
 
-        List<Map<String, Object>> restructuredPages = restructureNotionPages(newResults.toString());
-        
-        return restructuredPages;
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("Node script execution failed with exit code: " + exitCode + "\nOutput: " + output.toString());
+            }
+
+            // JSON 문자열을 Object로 변환
+            return output.toString();
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to execute Node.js script: " + e.getMessage(), e);
+        }
     }
 
     public void saveNotionPages(String assistantName, String userEmail, String notionPages) {
@@ -311,7 +381,6 @@ public class AssistantListService {
         assistant.setNotionPages(notionPages);
         assistantListRepository.save(assistant);
     }
-
 
     // Assistant 검색 (AI 개발 검색용도)
     public AssistantList searchAssistant(String userEmail, String assistantName) {

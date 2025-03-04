@@ -92,7 +92,9 @@ public class AssistantListController {
     }
 
     @GetMapping("/notionPages")
-    public ResponseEntity<?> getNotionPages(@RequestParam String assistantName, Authentication authentication) {
+    public ResponseEntity<?> getNotionPages(
+        @RequestParam("assistantName") String assistantName, 
+        Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
@@ -121,6 +123,24 @@ public class AssistantListController {
         try {
             assistantListService.saveNotionPages(assistantName, userEmail, notionPages);
             return ResponseEntity.ok("Notion pages saved successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/notionContent")
+    public ResponseEntity<?> getNotionContent(
+        @RequestParam("assistantName") String assistantName, 
+        Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+        
+        String userEmail = authentication.getName();
+        System.out.println("userEmail: " + userEmail);
+        try {
+            Object pageList = assistantListService.getNotionContent(assistantName, userEmail);
+            return ResponseEntity.ok(pageList);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
