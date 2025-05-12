@@ -3,6 +3,8 @@ package com.example.merging.slackOAuth;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.response.oauth.OAuthV2AccessResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -68,17 +70,47 @@ public class SlackOAuthController {
             SlackOAuthDTO slackUserDTO = slackOAuthService.saveOrUpdateSlackOAuth(response, userEmail, assistantName);
 
             // 사용자의 Slack 워크스페이스로 리다이렉트
-            String redirectUrl = "slack://open?team=" + slackUserDTO.getWorkspaceId();
-            System.out.println("Redirecting to: " + redirectUrl); // 디버깅 로그
+            // String redirectUrl = "slack://open?team=" + slackUserDTO.getWorkspaceId();
+            // System.out.println("Redirecting to: " + redirectUrl); // 디버깅 로그
 
-            return ResponseEntity.status(302).header("Location", redirectUrl).build();
+            // return ResponseEntity.status(302).header("Location", redirectUrl).build();
+
+            // OAuth 인증 성공 시 새 창 닫기 위한 JavaScript 포함된 HTML 반환
+            String successHtml = "<!DOCTYPE html>" +
+                    "<html lang='en'>" +
+                    "<head><meta charset='UTF-8'><title>Slack OAuth</title></head>" +
+                    "<body>" +
+                    "<script>" +
+                    "  window.opener.postMessage('slack_auth_success', '*');" + // 부모 창에 알림
+                    "  window.close();" + // 현재 창 닫기
+                    "</script>" +
+                    "<p>Slack account connected successfully! You can close this window.</p>" +
+                    "</body>" +
+                    "</html>";
+
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(successHtml);
 
         } catch (IOException | SlackApiException e) {
             System.out.println("Error during Slack OAuth callback: " + e.getMessage()); // 디버깅 로그
-            return ResponseEntity.status(500).body("Error during Slack OAuth callback: " + e.getMessage());
+            String errorHtml = "<!DOCTYPE html>" +
+                    "<html lang='en'>" +
+                    "<head><meta charset='UTF-8'><title>Slack OAuth</title></head>" +
+                    "<body>" +
+                    "<p>Failed to connect Slack account: " + e.getMessage() + "</p>" +
+                    "</body>" +
+                    "</html>";
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_HTML).body(errorHtml);
         } catch (Exception e) {
             System.out.println("Unexpected error: " + e.getMessage()); // 디버깅 로그
-            return ResponseEntity.status(500).body("Unexpected error: " + e.getMessage());
-        }
+            String errorHtml = "<!DOCTYPE html>" +
+                    "<html lang='en'>" +
+                    "<head><meta charset='UTF-8'><title>Slack OAuth</title></head>" +
+                    "<body>" +
+                    "<p>Unexpected error: " + e.getMessage() + "</p>" +
+                    "</body>" +
+                    "</html>";
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.TEXT_HTML).body(errorHtml);        }
     }
 }

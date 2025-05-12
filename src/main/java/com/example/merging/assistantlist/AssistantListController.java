@@ -64,7 +64,7 @@ public class AssistantListController {
 
         assistantListService.updateActionTag(userEmail, assistantName, actionTag);
 
-        // assistantListService.sendAssistantToAIServer(userEmail, assistantName);
+        assistantListService.sendAssistantToAIServer(userEmail, assistantName);
 
         return ResponseEntity.ok("Assistant action updated");
     }
