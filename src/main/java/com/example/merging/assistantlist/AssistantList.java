@@ -77,6 +77,11 @@ public class AssistantList {
     @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
     private SlackOAuth slackOAuth;
 
+    @JsonManagedReference
+    @OneToOne(mappedBy = "assistant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OnDelete(action = OnDeleteAction.CASCADE) // FK 연결된 엔티티 자동 삭제
+    private JiraOAuth jiraOAuth;
+
     public String getNotionPages() {
         return notionPages;
     }
