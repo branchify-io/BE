@@ -66,7 +66,7 @@ public class UserService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(email);
 
         // Refresh Token 저장
-        refreshTokenRepository.save(new RefreshToken(email, refreshToken));
+        refreshTokenRepository.save(new RefreshToken(user, refreshToken));
 
         // HttpOnly Cookie에 Refresh Token 저장
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -113,7 +113,7 @@ public class UserService {
         }
 
         // 새 액세스 토큰 발급
-        return jwtTokenProvider.generateAccessToken(storedToken.getEmail());
+        return jwtTokenProvider.generateAccessToken(storedToken.getUser().getEmail());
     }
 
     // 로그아웃

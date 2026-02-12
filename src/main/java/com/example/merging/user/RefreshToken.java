@@ -1,9 +1,12 @@
 package com.example.merging.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -17,8 +20,11 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String email;
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_email", referencedColumnName = "email", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private User user;
 
     @Column(nullable = false)
     private String refreshToken;
@@ -27,8 +33,8 @@ public class RefreshToken {
     private LocalDateTime createdAt;
 
     // 생성자
-    public RefreshToken(String email, String refreshToken) {
-        this.email = email;
+    public RefreshToken(User user, String refreshToken) {
+        this.user = user;
         this.refreshToken = refreshToken;
         this.createdAt = LocalDateTime.now();
     }
